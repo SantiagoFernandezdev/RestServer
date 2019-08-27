@@ -2,9 +2,10 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const _ = require('underscore');
 const Usuario = require('../Models/usuarios');
+const { verificarToken, verificaADMIN_ROLE } = require('../middlewares/Authentication');
 const app = express();
 
-app.get('/usuarios', (req, res) => {
+app.get('/usuarios', [verificarToken, verificaADMIN_ROLE], (req, res) => {
 
      let desde = req.query.desde || 0;
      desde = Number(desde);
@@ -26,7 +27,7 @@ app.get('/usuarios', (req, res) => {
           Usuario.countDocuments( { }, (err, conteo) => {
                res.json({
                     ok: true,
-                    usuarioDB,
+                    usuario: usuarioDB,
                     conteo
                })
           })
@@ -66,21 +67,21 @@ app.put('/usuarios/:id', (req, res) => {
      let id = req.params.id;
      let body = _.pick(req.body, ['nombre', 'email', 'img', 'estado', 'role']);
 
-     Usuario.findByIdAndUpdate(id, body, {new: true, runValidators: true}, (err, usuarioDB) => {
-          if(err) {
-               return res.status(400).json({
-                    ok: false,
-                    err
+          Usuario.findByIdAndUpdate(id, body, {new: true, runValidators: true, context: 'query'}, (err, usuarioDB) => {
+               if(err) {
+                    return res.status(400).json({
+                         ok: false,
+                         err
+                    })
+               }
+     
+               res.json({
+                    ok: true,
+                    usuario: usuarioDB
                })
-          }
-
-          res.json({
-               ok: true,
-               usuario: usuarioDB
+     
+     
           })
-
-
-     })
 })
 
 module.exports = app ;
